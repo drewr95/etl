@@ -717,6 +717,21 @@ namespace
     }
 
     //*************************************************************************
+    TEST_FIXTURE(SetupFixture, test_member_reference_instance_pointer)
+    {
+      Test test;
+      auto d = etl::delegate<void(const Data&, int)>::create<Test, &Test::member_reference>(&test);
+
+      Data data;
+      data.d = VALUE1;
+
+      d(data, VALUE2);
+
+      CHECK(function_called == FunctionCalled::Member_Reference_Called);
+      CHECK(parameter_correct);
+    }
+
+    //*************************************************************************
 #if ETL_USING_CPP14
     TEST_FIXTURE(SetupFixture, test_member_reference_constexpr)
     {
