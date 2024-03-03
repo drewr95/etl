@@ -812,6 +812,21 @@ namespace
     }
 
     //*************************************************************************
+    TEST_FIXTURE(SetupFixture, test_member_moveableonly_instance_pointer)
+    {
+      Test test;
+      auto d = etl::delegate<void(MoveableOnlyData&&)>::create<Test, &Test::member_moveableonly>(&test);
+
+      MoveableOnlyData data;
+      data.d = VALUE1;
+
+      d(std::move(data));
+
+      CHECK(function_called == FunctionCalled::Member_Moveableonly_Called);
+      CHECK(parameter_correct);
+    }
+
+    //*************************************************************************
 #if ETL_USING_CPP14
     TEST_FIXTURE(SetupFixture, test_member_moveableonly_constexpr)
     {
