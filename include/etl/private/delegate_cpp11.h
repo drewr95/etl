@@ -48,12 +48,12 @@ Original publication: https://www.codeproject.com/Articles/1170503/The-Impossibl
 #ifndef ETL_DELEGATE_CPP11_INCLUDED
 #define ETL_DELEGATE_CPP11_INCLUDED
 
-#include "../platform.h"
 #include "../error_handler.h"
 #include "../exception.h"
+#include "../optional.h"
+#include "../platform.h"
 #include "../type_traits.h"
 #include "../utility.h"
-#include "../optional.h"
 
 namespace etl
 {
@@ -63,7 +63,6 @@ namespace etl
   class delegate_exception : public exception
   {
   public:
-
     delegate_exception(string_type reason_, string_type file_name_, numeric_type line_number_)
       : exception(reason_, file_name_, line_number_)
     {
@@ -76,9 +75,8 @@ namespace etl
   class delegate_uninitialised : public delegate_exception
   {
   public:
-
     delegate_uninitialised(string_type file_name_, numeric_type line_number_)
-      : delegate_exception(ETL_ERROR_TEXT("delegate:uninitialised", ETL_DELEGATE_FILE_ID"A"), file_name_, line_number_)
+      : delegate_exception(ETL_ERROR_TEXT("delegate:uninitialised", ETL_DELEGATE_FILE_ID "A"), file_name_, line_number_)
     {
     }
   };
@@ -86,7 +84,8 @@ namespace etl
   //*************************************************************************
   /// Declaration.
   //*************************************************************************
-  template <typename T> class delegate;
+  template <typename T>
+  class delegate;
 
   //*************************************************************************
   /// Specialisation.
@@ -95,7 +94,6 @@ namespace etl
   class delegate<TReturn(TParams...)> final
   {
   public:
-
     //*************************************************************************
     /// Default constructor.
     //*************************************************************************
@@ -129,9 +127,8 @@ namespace etl
     //*************************************************************************
     /// Create from function (Compile time).
     //*************************************************************************
-    template <TReturn(*Method)(TParams...)>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create()
+    template <TReturn (*Method)(TParams...)>
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create()
     {
       return delegate(ETL_NULLPTR, function_stub<Method>);
     }
@@ -140,8 +137,7 @@ namespace etl
     /// Create from Lambda or Functor.
     //*************************************************************************
     template <typename TLambda, typename = etl::enable_if_t<etl::is_class<TLambda>::value && !etl::is_same<etl::delegate<TReturn(TParams...)>, TLambda>::value, void>>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create(TLambda& instance)
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create(TLambda& instance)
     {
       return delegate((void*)(&instance), lambda_stub<TLambda>);
     }
@@ -150,8 +146,7 @@ namespace etl
     /// Create from const Lambda or Functor.
     //*************************************************************************
     template <typename TLambda, typename = etl::enable_if_t<etl::is_class<TLambda>::value && !etl::is_same<etl::delegate<TReturn(TParams...)>, TLambda>::value, void>>
-    ETL_NODISCARD
-      static ETL_CONSTEXPR14 delegate create(const TLambda& instance)
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create(const TLambda& instance)
     {
       return delegate((void*)(&instance), const_lambda_stub<TLambda>);
     }
@@ -159,43 +154,59 @@ namespace etl
     //*************************************************************************
     /// Create from instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn(T::*Method)(TParams...)>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create(T& instance)
+    template <typename T, TReturn (T::*Method)(TParams...)>
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create(T& instance)
     {
       return delegate((void*)(&instance), method_stub<T, Method>);
     }
 
     //*************************************************************************
     /// Create from instance method (Run time).
+    //*************************************************************************
+    template <typename T, TReturn (T::*Method)(TParams...)>
+    ETL_NODISCARD static delegate create(T* const instance)
+    {
+      ETL_ASSERT((instance != ETL_NULLPTR), ETL_ERROR(delegate_uninitialised));
+      return create(*instance);
+    }
+
+    //*************************************************************************
+    /// Create from instance method (Run time).
     /// Deleted for rvalue references.
     //*************************************************************************
-    template <typename T, TReturn(T::*Method)(TParams...)>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create(T&& instance) = delete;
+    template <typename T, TReturn (T::*Method)(TParams...)>
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create(T&& instance) = delete;
 
     //*************************************************************************
     /// Create from const instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn(T::*Method)(TParams...) const>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create(const T& instance)
+    template <typename T, TReturn (T::*Method)(TParams...) const>
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create(const T& instance)
     {
       return delegate((void*)(&instance), const_method_stub<T, Method>);
     }
 
     //*************************************************************************
+    /// Create from const instance method (Run time).
+    //*************************************************************************
+    template <typename T, TReturn (T::*Method)(TParams...) const>
+    ETL_NODISCARD static delegate create(const T* const instance)
+    {
+      ETL_ASSERT((instance != ETL_NULLPTR), ETL_ERROR(delegate_uninitialised));
+      return create(*instance);
+    }
+
+    //*************************************************************************
     /// Disable create from rvalue instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn(T::*Method)(TParams...) const>
+    template <typename T, TReturn (T::*Method)(TParams...) const>
     static ETL_CONSTEXPR14 delegate create(T&& instance) = delete;
 
     //*************************************************************************
     /// Create from instance method (Compile time).
     //*************************************************************************
-    template <typename T, T& Instance, TReturn(T::*Method)(TParams...)>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create()
+    template <typename T, T& Instance, TReturn (T::*Method)(TParams...)>
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create()
     {
       return delegate(method_instance_stub<T, Instance, Method>);
     }
@@ -203,9 +214,8 @@ namespace etl
     //*************************************************************************
     /// Create from const instance method (Compile time).
     //*************************************************************************
-    template <typename T, T const& Instance, TReturn(T::*Method)(TParams...) const>
-    ETL_NODISCARD
-    static ETL_CONSTEXPR14 delegate create()
+    template <typename T, T const& Instance, TReturn (T::*Method)(TParams...) const>
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create()
     {
       return delegate(const_method_instance_stub<T, Instance, Method>);
     }
@@ -216,8 +226,7 @@ namespace etl
     /// At the time of writing, GCC appears to have trouble with this.
     //*************************************************************************
     template <typename T, T& Instance>
-    ETL_NODISCARD
-      static ETL_CONSTEXPR14 delegate create()
+    ETL_NODISCARD static ETL_CONSTEXPR14 delegate create()
     {
       return delegate(operator_instance_stub<T, Instance>);
     }
@@ -226,7 +235,7 @@ namespace etl
     //*************************************************************************
     /// Set from function (Compile time).
     //*************************************************************************
-    template <TReturn(*Method)(TParams...)>
+    template <TReturn (*Method)(TParams...)>
     ETL_CONSTEXPR14 void set()
     {
       assign(ETL_NULLPTR, function_stub<Method>);
@@ -253,7 +262,7 @@ namespace etl
     //*************************************************************************
     /// Set from instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn(T::* Method)(TParams...)>
+    template <typename T, TReturn (T::*Method)(TParams...)>
     ETL_CONSTEXPR14 void set(T& instance)
     {
       assign((void*)(&instance), method_stub<T, Method>);
@@ -262,7 +271,7 @@ namespace etl
     //*************************************************************************
     /// Set from const instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn(T::* Method)(TParams...) const>
+    template <typename T, TReturn (T::*Method)(TParams...) const>
     ETL_CONSTEXPR14 void set(T& instance)
     {
       assign((void*)(&instance), const_method_stub<T, Method>);
@@ -271,7 +280,7 @@ namespace etl
     //*************************************************************************
     /// Set from instance method (Compile time).
     //*************************************************************************
-    template <typename T, T& Instance, TReturn(T::* Method)(TParams...)>
+    template <typename T, T& Instance, TReturn (T::*Method)(TParams...)>
     ETL_CONSTEXPR14 void set()
     {
       assign(ETL_NULLPTR, method_instance_stub<T, Instance, Method>);
@@ -280,7 +289,7 @@ namespace etl
     //*************************************************************************
     /// Set from const instance method (Compile time).
     //*************************************************************************
-    template <typename T, T const& Instance, TReturn(T::* Method)(TParams...) const>
+    template <typename T, T const& Instance, TReturn (T::*Method)(TParams...) const>
     ETL_CONSTEXPR14 void set()
     {
       assign(ETL_NULLPTR, const_method_instance_stub<T, Instance, Method>);
@@ -310,7 +319,7 @@ namespace etl
     //*************************************************************************
     template <typename TRet = TReturn>
     typename etl::enable_if_t<etl::is_same<TRet, void>::value, bool>
-      call_if(TParams... args) const
+    call_if(TParams... args) const
     {
       if (is_valid())
       {
@@ -329,7 +338,7 @@ namespace etl
     //*************************************************************************
     template <typename TRet = TReturn>
     typename etl::enable_if_t<!etl::is_same<TRet, void>::value, etl::optional<TReturn>>
-      call_if(TParams... args) const
+    call_if(TParams... args) const
     {
       etl::optional<TReturn> result;
 
@@ -362,7 +371,7 @@ namespace etl
     /// Execute the delegate if valid or call alternative.
     /// Compile time alternative.
     //*************************************************************************
-    template <TReturn(*Method)(TParams...)>
+    template <TReturn (*Method)(TParams...)>
     TReturn call_or(TParams... args) const
     {
       if (is_valid())
@@ -378,13 +387,13 @@ namespace etl
     //*************************************************************************
     /// Assignment
     //*************************************************************************
-    delegate& operator =(const delegate& rhs) = default;
+    delegate& operator=(const delegate& rhs) = default;
 
     //*************************************************************************
     /// Create from Lambda or Functor.
     //*************************************************************************
     template <typename TLambda, typename = etl::enable_if_t<etl::is_class<TLambda>::value && !etl::is_same<etl::delegate<TReturn(TParams...)>, TLambda>::value, void>>
-    ETL_CONSTEXPR14 delegate& operator =(TLambda& instance)
+    ETL_CONSTEXPR14 delegate& operator=(TLambda& instance)
     {
       assign((void*)(&instance), lambda_stub<TLambda>);
       return *this;
@@ -394,7 +403,7 @@ namespace etl
     /// Create from const Lambda or Functor.
     //*************************************************************************
     template <typename TLambda, typename = etl::enable_if_t<etl::is_class<TLambda>::value && !etl::is_same<etl::delegate<TReturn(TParams...)>, TLambda>::value, void>>
-    ETL_CONSTEXPR14 delegate& operator =(const TLambda& instance)
+    ETL_CONSTEXPR14 delegate& operator=(const TLambda& instance)
     {
       assign((void*)(&instance), const_lambda_stub<TLambda>);
       return *this;
@@ -403,7 +412,7 @@ namespace etl
     //*************************************************************************
     /// Checks equality.
     //*************************************************************************
-    ETL_CONSTEXPR14 bool operator == (const delegate& rhs) const
+    ETL_CONSTEXPR14 bool operator==(const delegate& rhs) const
     {
       return invocation == rhs.invocation;
     }
@@ -411,7 +420,7 @@ namespace etl
     //*************************************************************************
     /// Returns <b>true</b> if the delegate is valid.
     //*************************************************************************
-    ETL_CONSTEXPR14 bool operator != (const delegate& rhs) const
+    ETL_CONSTEXPR14 bool operator!=(const delegate& rhs) const
     {
       return invocation != rhs.invocation;
     }
@@ -434,8 +443,7 @@ namespace etl
     }
 
   private:
-
-    using stub_type = TReturn(*)(void* object, TParams...);
+    using stub_type = TReturn (*)(void* object, TParams...);
 
     //*************************************************************************
     /// The internal invocation object.
@@ -452,13 +460,13 @@ namespace etl
       }
 
       //***********************************************************************
-      ETL_CONSTEXPR14 bool operator ==(const invocation_element& rhs) const
+      ETL_CONSTEXPR14 bool operator==(const invocation_element& rhs) const
       {
         return (rhs.stub == stub) && (rhs.object == object);
       }
 
       //***********************************************************************
-      ETL_CONSTEXPR14 bool operator !=(const invocation_element& rhs) const
+      ETL_CONSTEXPR14 bool operator!=(const invocation_element& rhs) const
       {
         return (rhs.stub != stub) || (rhs.object != object);
       }
@@ -467,12 +475,12 @@ namespace etl
       ETL_CONSTEXPR14 void clear()
       {
         object = ETL_NULLPTR;
-        stub   = ETL_NULLPTR;
+        stub = ETL_NULLPTR;
       }
 
       //***********************************************************************
       void*     object = ETL_NULLPTR;
-      stub_type stub   = ETL_NULLPTR;
+      stub_type stub = ETL_NULLPTR;
     };
 
     //*************************************************************************
@@ -497,13 +505,13 @@ namespace etl
     ETL_CONSTEXPR14 void assign(void* object, stub_type stub)
     {
       invocation.object = object;
-      invocation.stub   = stub;
+      invocation.stub = stub;
     }
 
     //*************************************************************************
     /// Stub call for a member function. Run time instance.
     //*************************************************************************
-    template <typename T, TReturn(T::*Method)(TParams...)>
+    template <typename T, TReturn (T::*Method)(TParams...)>
     static ETL_CONSTEXPR14 TReturn method_stub(void* object, TParams... params)
     {
       T* p = static_cast<T*>(object);
@@ -513,7 +521,7 @@ namespace etl
     //*************************************************************************
     /// Stub call for a const member function. Run time instance.
     //*************************************************************************
-    template <typename T, TReturn(T::*Method)(TParams...) const>
+    template <typename T, TReturn (T::*Method)(TParams...) const>
     static ETL_CONSTEXPR14 TReturn const_method_stub(void* object, TParams... params)
     {
       T* const p = static_cast<T*>(object);
@@ -523,7 +531,7 @@ namespace etl
     //*************************************************************************
     /// Stub call for a member function. Compile time instance.
     //*************************************************************************
-    template <typename T, T& Instance, TReturn(T::*Method)(TParams...)>
+    template <typename T, T& Instance, TReturn (T::*Method)(TParams...)>
     static ETL_CONSTEXPR14 TReturn method_instance_stub(void*, TParams... params)
     {
       return (Instance.*Method)(etl::forward<TParams>(params)...);
@@ -532,7 +540,7 @@ namespace etl
     //*************************************************************************
     /// Stub call for a const member function. Compile time instance.
     //*************************************************************************
-    template <typename T, const T& Instance, TReturn(T::*Method)(TParams...) const>
+    template <typename T, const T& Instance, TReturn (T::*Method)(TParams...) const>
     static ETL_CONSTEXPR14 TReturn const_method_instance_stub(void*, TParams... params)
     {
       return (Instance.*Method)(etl::forward<TParams>(params)...);
@@ -552,7 +560,7 @@ namespace etl
     //*************************************************************************
     /// Stub call for a free function.
     //*************************************************************************
-    template <TReturn(*Method)(TParams...)>
+    template <TReturn (*Method)(TParams...)>
     static ETL_CONSTEXPR14 TReturn function_stub(void*, TParams... params)
     {
       return (Method)(etl::forward<TParams>(params)...);
@@ -583,6 +591,6 @@ namespace etl
     //*************************************************************************
     invocation_element invocation;
   };
-}
+}  // namespace etl
 
 #endif
