@@ -167,7 +167,7 @@ namespace etl
     ETL_NODISCARD static delegate create(T* const instance)
     {
       ETL_ASSERT((instance != ETL_NULLPTR), ETL_ERROR(delegate_uninitialised));
-      return create(*instance);
+      return create<T, Method>(*instance);
     }
 
     //*************************************************************************
