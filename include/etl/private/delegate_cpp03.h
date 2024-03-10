@@ -261,11 +261,12 @@ namespace etl
     //*************************************************************************
     /// Create from instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn (T::*Method)(TParam)>
-    ETL_NODISCARD static delegate create(T* const instance)
+    template <typename T, TReturn(T::*Method)(TParam)>
+    static delegate create(T* const instance)
     {
       ETL_ASSERT((instance != ETL_NULLPTR), ETL_ERROR(delegate_uninitialised));
-      return create<T, Method>(*instance);
+      return delegate((void*)(&instance), method_stub<T, Method>);
+      // return create<T, Method>(*instance);
     }
 
     //*************************************************************************
@@ -280,8 +281,8 @@ namespace etl
     //*************************************************************************
     /// Create from const instance method (Run time).
     //*************************************************************************
-    template <typename T, TReturn (T::*Method)(TParam) const>
-    ETL_NODISCARD static delegate create(const T* const instance)
+    template <typename T, TReturn(T::*Method)(TParam) const>
+    static delegate create(const T* const instance)
     {
       ETL_ASSERT((instance != ETL_NULLPTR), ETL_ERROR(delegate_uninitialised));
       return create<T, Method>(*instance);

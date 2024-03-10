@@ -379,6 +379,18 @@ namespace
     }
 
     //*************************************************************************
+    TEST_FIXTURE(SetupFixture, test_member_void_instance_pointer)
+    {
+      Test test;
+
+      auto d = etl_cpp03::delegate<void(void)>::create<Test, &Test::member_void>(&test);
+
+      d();
+
+      CHECK(function_called == FunctionCalled::Member_Void_Called);
+    }
+
+    //*************************************************************************
     TEST_FIXTURE(SetupFixture, test_member_void_const)
     {
       const Test test;
