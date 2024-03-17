@@ -193,7 +193,6 @@ namespace etl
         decrement_reference_count();
       }
 
-
       //***************************************************************************
       /// \brief Copy assignment.
       /// \param other  The other shared disconnector.
@@ -210,6 +209,17 @@ namespace etl
           p_rcdisconnector = other.p_rcdisconnector;
           increment_reference_count();
         }
+        return *this;
+      }
+
+      shared_disconnector& operator=(ireference_counted_disconnector& rcdisconnector_) ETL_NOEXCEPT
+      {
+        // Deal with the current disconnector
+        decrement_reference_count();
+
+        // Set the new one
+        p_rcdisconnector = &rcdisconnector_;
+        p_rcdisconnector->get_reference_counter().set_reference_count(1);
         return *this;
       }
 
@@ -750,6 +760,7 @@ namespace etl
       : p_slots{ETL_OR_STD::exchange(other.p_slots, ETL_NULLPTR)}
       , slot_count{ETL_OR_STD::exchange(other.slot_count, 0U)}
     {
+      update_disconnectors(std::move(other));
     }
 
     //*************************************************************************
@@ -760,6 +771,7 @@ namespace etl
     {
       p_slots = ETL_OR_STD::exchange(other.p_slots, ETL_NULLPTR);
       slot_count = ETL_OR_STD::exchange(other.slot_count, 0U);
+      update_disconnectors(std::move(other));
       return *this;
     }
 #endif // ETL_USING_CPP11
@@ -823,6 +835,9 @@ namespace etl
     {
       if(other.shared_disconnect)
       {
+        // Set our shared disconnector.
+        shared_disconnect = rc_disconnect;
+
         // Move the reference count.
         rc_disconnect.get_reference_counter() = ETL_OR_STD::move(other.rc_disconnect.get_reference_counter());
 
