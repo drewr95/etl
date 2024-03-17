@@ -625,7 +625,11 @@ namespace etl
       p_slots->push_back(ETL_OR_STD::forward<TSlot>(slot));
       const size_type index = p_slots->size() - 1U;
       ++slot_count;
-      return connection{rc_disconnect, index};
+      if(!shared_disconnect)
+      {
+        shared_disconnect = detail::shared_disconnector{rc_disconnect};
+      }
+      return connection{shared_disconnect, index};
     }
 
     //*************************************************************************
@@ -773,7 +777,7 @@ namespace etl
     class disconnector final : public detail::disconnector
     {
     public:
-      typedef etl::delegate<TReturn(TArgs...)> signal_type;
+      typedef isignal<TReturn(TArgs...)> signal_type;
 
       disconnector() ETL_NOEXCEPT = default;
       ~disconnector() ETL_NOEXCEPT override = default;
@@ -806,9 +810,9 @@ namespace etl
     typedef etl::detail::reference_counted_disconnector<disconnector> rc_disconnector;
     typedef etl::detail::shared_disconnector                          shared_disconnector;
 
-    etl::ivector<slot_type>* p_slots;
-    size_type                slot_count{0};
-    rc_disconnector          rc_disconnect{disconnector{this}};
+    etl::ivector<slot_type>*    p_slots;
+    size_type                   slot_count{0};
+    rc_disconnector             rc_disconnect{disconnector{this}};
     detail::shared_disconnector shared_disconnect{};
 
     //*************************************************************************
