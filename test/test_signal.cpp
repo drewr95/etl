@@ -127,5 +127,25 @@ namespace
       // expect all the signals got called
       CHECK_EQUAL(std::string{"freelambdastaticmethodfunctor"}, ss.str());
     }
+
+    //*************************************************************************
+    TEST(test_move_contruction)
+    {
+      static constexpr size_t totalConnections{1U};
+      using signal_type = etl::signal<void(std::ostream&), totalConnections>;
+
+      signal_type sig;
+      auto connection = sig.connect([](std::ostream& out){out << "lambda"; });
+
+      signal_type moved_sig{ETL_OR_STD::move(sig)};
+      std::stringstream ss;
+      moved_sig(ss);
+      CHECK_EQUAL(std::string{"lambda"}, ss.str());
+
+      ss = {};
+      connection.disconnect();
+      moved_sig(ss);
+      CHECK_EQUAL(std::string{""}, ss.str());
+    }
   }
 }  // namespace
