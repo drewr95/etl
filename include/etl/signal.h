@@ -924,6 +924,7 @@ namespace etl
         slots = ETL_OR_STD::exchange(other.slots, {});
         base_type::set_slots(slots);
       }
+      return *this;
     }
 
   private:
