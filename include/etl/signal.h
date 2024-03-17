@@ -747,9 +747,9 @@ namespace etl
     /// \param other  The other signal to move to this.
     //*************************************************************************
     isignal(isignal&& other) ETL_NOEXCEPT
-      : slot_count{ETL_OR_STD::exchange(other.slot_count, 0U)}
+      : p_slots{ETL_OR_STD::exchange(other.p_slots, ETL_NULLPTR)}
+      , slot_count{ETL_OR_STD::exchange(other.slot_count, 0U)}
     {
-      update_slots(ETL_OR_STD::forward<isignal>(other));
     }
 
     //*************************************************************************
@@ -758,8 +758,8 @@ namespace etl
     //*************************************************************************
     isignal& operator=(isignal&& other) noexcept
     {
+      p_slots = ETL_OR_STD::exchange(other.p_slots, ETL_NULLPTR);
       slot_count = ETL_OR_STD::exchange(other.slot_count, 0U);
-      update_slots(ETL_OR_STD::forward<isignal>(other));
       return *this;
     }
 #endif // ETL_USING_CPP11
