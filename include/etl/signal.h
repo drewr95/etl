@@ -891,8 +891,8 @@ namespace etl
     //*************************************************************************
     signal(signal&& other) ETL_NOEXCEPT
       : base_type{ETL_OR_STD::move(other)}
-      , slots{ETL_OR_STD::exchange(other.slots, {})}
     {
+      slots = ETL_OR_STD::exchange(other.slots, {});
       base_type::set_slots(slots);
     }
 
