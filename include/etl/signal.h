@@ -152,10 +152,13 @@ namespace etl
       /// \brief Constructs a shared_disconnector.
       /// \param rcdisconnector_  The reference counted disconnector.
       //***************************************************************************
-      shared_disconnector(ireference_counted_disconnector& rcdisconnector_) ETL_NOEXCEPT
-        : p_rcdisconnector{&rcdisconnector_}
+      shared_disconnector(ireference_counted_disconnector* rcdisconnector_) ETL_NOEXCEPT
+        : p_rcdisconnector{rcdisconnector_}
       {
-        p_rcdisconnector->get_reference_counter().set_reference_count(1U);
+        if(p_rcdisconnector != ETL_NULLPTR)
+        {
+          p_rcdisconnector->get_reference_counter().set_reference_count(1U);
+        }
       }
 
       //***************************************************************************
@@ -212,14 +215,17 @@ namespace etl
         return *this;
       }
 
-      shared_disconnector& operator=(ireference_counted_disconnector& rcdisconnector_) ETL_NOEXCEPT
+      shared_disconnector& operator=(ireference_counted_disconnector* const rcdisconnector_) ETL_NOEXCEPT
       {
         // Deal with the current disconnector
         decrement_reference_count();
 
         // Set the new one
-        p_rcdisconnector = &rcdisconnector_;
-        p_rcdisconnector->get_reference_counter().set_reference_count(1);
+        p_rcdisconnector = rcdisconnector_;
+        if(p_rcdisconnector != ETL_NULLPTR)
+        {
+          p_rcdisconnector->get_reference_counter().set_reference_count(1);
+        }
         return *this;
       }
 
@@ -369,7 +375,7 @@ namespace etl
       /// \brief  Constructs weak_disconnector from a shared_disconnector.
       //***************************************************************************
       weak_disconnector(shared_disconnector& sharedDisconnector) ETL_NOEXCEPT
-        : p_rcdisconnector{sharedDisconnector.p_rcdisconnector}
+        : p_prcdisconnector{&sharedDisconnector.p_rcdisconnector}
       {
       }
 
@@ -379,9 +385,9 @@ namespace etl
       //***************************************************************************
       ETL_NODISCARD int32_t use_count() const ETL_NOEXCEPT
       {
-        if(p_rcdisconnector != ETL_NULLPTR)
+        if((p_prcdisconnector != ETL_NULLPTR) && (*p_prcdisconnector != ETL_NULLPTR))
         {
-          return p_rcdisconnector->get_reference_counter().get_reference_count();
+          return (*p_prcdisconnector)->get_reference_counter().get_reference_count();
         }
         return 0;
       }
@@ -407,26 +413,27 @@ namespace etl
       //***************************************************************************
       void reset() ETL_NOEXCEPT
       {
-        p_rcdisconnector = ETL_NULLPTR;
+        p_prcdisconnector = ETL_NULLPTR;
       }
 
       //***************************************************************************
       /// \brief  Copy assignment from another shared_disconnector.
       /// \return  *this weak_disconnector.
       //***************************************************************************
-      weak_disconnector& operator=(const shared_disconnector& other) ETL_NOEXCEPT
+      weak_disconnector& operator=(shared_disconnector& other) ETL_NOEXCEPT
       {
-        p_rcdisconnector = other.p_rcdisconnector;
+        p_prcdisconnector = &other.p_rcdisconnector;
         return *this;
       }
 
     private:
       friend class shared_disconnector;
-      ireference_counted_disconnector* p_rcdisconnector{nullptr};
+      // Weak disconnector needs to point to a shared_disconnector's pointer.
+      ireference_counted_disconnector** p_prcdisconnector{ETL_NULLPTR};
     };
 
     inline shared_disconnector::shared_disconnector(weak_disconnector& weakDisconnector) ETL_NOEXCEPT
-      : p_rcdisconnector{weakDisconnector.p_rcdisconnector}
+      : p_rcdisconnector{*weakDisconnector.p_prcdisconnector}
     {
       increment_reference_count();
     }
@@ -635,6 +642,10 @@ namespace etl
       p_slots->push_back(ETL_OR_STD::forward<TSlot>(slot));
       const size_type index = p_slots->size() - 1U;
       ++slot_count;
+      if(!shared_disconnect)
+      {
+        shared_disconnect = &rc_disconnect;
+      }
       return connection{shared_disconnect, index};
     }
 
@@ -821,7 +832,7 @@ namespace etl
     etl::ivector<slot_type>*    p_slots;
     size_type                   slot_count{0};
     rc_disconnector             rc_disconnect{disconnector{this}};
-    detail::shared_disconnector shared_disconnect{rc_disconnect};
+    detail::shared_disconnector shared_disconnect{&rc_disconnect};
 
     //*************************************************************************
     /// \brief Updates the disconnectors.
@@ -831,10 +842,13 @@ namespace etl
     {
       if(other.shared_disconnect)
       {
-        /// \note Set the other shared disconnect to point to our disconnector
-        /// to transfer the other's weak disconnectors. This is essentially moving
-        /// the existing connections to this signal.
-        other.shared_disconnect = shared_disconnect;
+        // Invalidate our shared_disconnector to invalidate existing connections
+        // to this signal.
+        shared_disconnect = shared_disconnector{};
+
+        // Point the other signal's shared_disconnector to this rc_disconnect 
+        // so that the other signal's connections are "transferred" to this one.
+        other.shared_disconnect = &rc_disconnect;
       }
     }
 
