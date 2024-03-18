@@ -147,5 +147,21 @@ namespace
       moved_sig(ss);
       CHECK_EQUAL(std::string{""}, ss.str());
     }
+
+    //*************************************************************************
+    TEST(test_move_assignment)
+    {
+      static constexpr size_t totalConnections{1U};
+      using signal_type = etl::signal<void(std::ostream&), totalConnections>;
+
+      signal_type sig;
+      auto connection = sig.connect([](std::ostream& out){out << "lambda"; });
+
+      signal_type moved_sig;
+      auto connection2 = moved_sig.connect([](std::ostream& out){ out << "lambda2"; });
+
+      moved_sig = ETL_OR_STD::move(sig);
+      CHECK_FALSE(connection2.is_connected());
+    }
   }
 }  // namespace

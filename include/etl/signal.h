@@ -635,10 +635,6 @@ namespace etl
       p_slots->push_back(ETL_OR_STD::forward<TSlot>(slot));
       const size_type index = p_slots->size() - 1U;
       ++slot_count;
-      if(!shared_disconnect)
-      {
-        shared_disconnect = detail::shared_disconnector{rc_disconnect};
-      }
       return connection{shared_disconnect, index};
     }
 
@@ -825,7 +821,7 @@ namespace etl
     etl::ivector<slot_type>*    p_slots;
     size_type                   slot_count{0};
     rc_disconnector             rc_disconnect{disconnector{this}};
-    detail::shared_disconnector shared_disconnect{};
+    detail::shared_disconnector shared_disconnect{rc_disconnect};
 
     //*************************************************************************
     /// \brief Updates the disconnectors.
@@ -835,14 +831,10 @@ namespace etl
     {
       if(other.shared_disconnect)
       {
-        // Set our shared disconnector.
-        shared_disconnect = rc_disconnect;
-
-        // Move the reference count.
-        rc_disconnect.get_reference_counter() = ETL_OR_STD::move(other.rc_disconnect.get_reference_counter());
-
-        // Assign their disconnector to ours.
-        *static_cast<disconnector*>(other.shared_disconnect.get()) = disconnector{this};
+        /// \note Set the other shared disconnect to point to our disconnector
+        /// to transfer the other's weak disconnectors. This is essentially moving
+        /// the existing connections to this signal.
+        other.shared_disconnect = shared_disconnect;
       }
     }
 
