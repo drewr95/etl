@@ -155,10 +155,7 @@ namespace etl
       shared_disconnector(ireference_counted_disconnector* rcdisconnector_) ETL_NOEXCEPT
         : p_rcdisconnector{rcdisconnector_}
       {
-        if(p_rcdisconnector != ETL_NULLPTR)
-        {
-          p_rcdisconnector->get_reference_counter().set_reference_count(1U);
-        }
+        initialize_reference_count();
       }
 
       //***************************************************************************
@@ -222,10 +219,7 @@ namespace etl
 
         // Set the new one
         p_rcdisconnector = rcdisconnector_;
-        if(p_rcdisconnector != ETL_NULLPTR)
-        {
-          p_rcdisconnector->get_reference_counter().set_reference_count(1);
-        }
+        initialize_reference_count();
         return *this;
       }
 
@@ -329,6 +323,17 @@ namespace etl
     private:
       friend class weak_disconnector;
       ireference_counted_disconnector* p_rcdisconnector{nullptr};
+
+      //***************************************************************************
+      /// \brief Handles setting the reference count to 1.
+      //***************************************************************************
+      void initialize_reference_count() ETL_NOEXCEPT
+      {
+        if(p_rcdisconnector != ETL_NULLPTR)
+        {
+          p_rcdisconnector->get_reference_counter().set_reference_count(1);
+        }
+      }
 
       //***************************************************************************
       /// \brief Handles incrementing the reference count.
