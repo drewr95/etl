@@ -172,9 +172,9 @@ namespace etl
     //*************************************************************************
     // Construct from a function pointer.
     //*************************************************************************
-    explicit delegate(function_ptr fp) ETL_NOEXCEPT
+    explicit ETL_CONSTEXPR14 delegate(function_ptr fp) ETL_NOEXCEPT
+      : invocation(fp, function_ptr_stub)
     {
-      assign(fp, function_ptr_stub);
     }
 
     //*************************************************************************
@@ -211,7 +211,7 @@ namespace etl
     // Create from a function pointer.
     //*************************************************************************
     ETL_NODISCARD
-    static delegate create(function_ptr fp) ETL_NOEXCEPT
+    static ETL_CONSTEXPR14 delegate create(function_ptr fp) ETL_NOEXCEPT
     {
       return delegate(fp, function_ptr_stub);
     }
@@ -335,7 +335,7 @@ namespace etl
     //*************************************************************************
     // Set from a function pointer.
     //*************************************************************************
-    void set(function_ptr fp) ETL_NOEXCEPT
+    ETL_CONSTEXPR14 void set(function_ptr fp) ETL_NOEXCEPT
     {
       assign(fp, function_ptr_stub);
     }
@@ -532,7 +532,7 @@ namespace etl
     //*************************************************************************
     // Create from a function pointer.
     //*************************************************************************
-    delegate& operator=(function_ptr fp) ETL_NOEXCEPT
+    ETL_CONSTEXPR14 delegate& operator=(function_ptr fp) ETL_NOEXCEPT
     {
       if (fp == ETL_NULLPTR)
       {
