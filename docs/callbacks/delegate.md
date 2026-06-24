@@ -161,6 +161,19 @@ constexpr auto d = etl::delegate<int(int)>::create<Test, test, &Test::member_fun
 All create functions are `constexpr` under C++14.
 All create functions are `[[nodiscard]]` under C++17.
 
+`>=TBC`  
+The runtime function-pointer overloads `delegate(function_ptr)` and
+`create(function_ptr)` are usable in constant expressions from C++14.
+The mutating overloads `set(function_ptr)` and `operator=(function_ptr)` are
+usable in constant expressions from C++20 (they switch the active member of
+an internal union, which became permitted in constant expressions in C++20
+per [P1330R0](https://wg21.link/P1330R0)).
+
+```cpp
+constexpr auto d1 = etl::delegate<int(int)>(&global);
+constexpr auto d2 = etl::delegate<int(int)>::create(&global);
+```
+
 ### Calling the delegate
 
 The delegate may be called as a function with the defined parameter signature.
@@ -195,11 +208,12 @@ Copy constructs a delegate.
 ---
 
 ```cpp
-delegate(TReturn (*)(TArgs...) fp) ETL_NOEXCEPT
+explicit ETL_CONSTEXPR14 delegate(TReturn (*)(TArgs...) fp) ETL_NOEXCEPT
 ```
 **Description**  
 Constructs from a run-time function pointer, or non-capturing lambda converted to a function pointer.  
-*From `20.47.0`*
+*From `20.47.0`*  
+*Constexpr from `TBC`*
 
 ## Creation
 
@@ -218,11 +232,12 @@ A constructed delegate.
 
 ```cpp
 ETL_NODISCARD
-static delegate create(function_ptr fp) ETL_NOEXCEPT
+static ETL_CONSTEXPR14 delegate create(function_ptr fp) ETL_NOEXCEPT
 ```
 **Description**  
 Create from a run-time function pointer.  
 *From `20.47.0`*  
+*Constexpr from `TBC`*  
 
 **Returns**  
 A constructed delegate.
