@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "etl/cyclic_value.h"
 
+#include <limits.h>
+
 namespace
 {
   SUITE(test_cyclic_value)
@@ -42,8 +44,8 @@ namespace
       etl::cyclic_value<int, 2, 7> value;
 
       CHECK_EQUAL(2, value);
-      CHECK_EQUAL(2, value.first());
-      CHECK_EQUAL(7, value.last());
+      CHECK_EQUAL(2, value.min());
+      CHECK_EQUAL(7, value.max());
     }
 
     //*************************************************************************
@@ -52,8 +54,8 @@ namespace
       etl::cyclic_value<int> value(2, 7);
 
       CHECK_EQUAL(2, value);
-      CHECK_EQUAL(2, value.first());
-      CHECK_EQUAL(7, value.last());
+      CHECK_EQUAL(2, value.min());
+      CHECK_EQUAL(7, value.max());
     }
 
     //*************************************************************************
@@ -79,19 +81,19 @@ namespace
 
       CV value;
 
-      CHECK_EQUAL(2, value.first());
-      CHECK_EQUAL(7, value.last());
-      CHECK_EQUAL(2, CV::first());
-      CHECK_EQUAL(7, CV::last());
+      CHECK_EQUAL(2, value.min());
+      CHECK_EQUAL(7, value.max());
+      CHECK_EQUAL(2, CV::min());
+      CHECK_EQUAL(7, CV::max());
 
       value.set(5);
       CHECK_EQUAL(5, value.get());
 
       value.set(1);
-      CHECK_EQUAL(value.first(), value.get());
+      CHECK_EQUAL(value.min(), value.get());
 
       value.set(8);
-      CHECK_EQUAL(value.last(), value.get());
+      CHECK_EQUAL(value.max(), value.get());
     }
 
     //*************************************************************************
@@ -120,17 +122,17 @@ namespace
       value.set(2, 7);
 
       CHECK_EQUAL(2, value.get());
-      CHECK_EQUAL(2, value.first());
-      CHECK_EQUAL(7, value.last());
+      CHECK_EQUAL(2, value.min());
+      CHECK_EQUAL(7, value.max());
 
       value.set(5);
       CHECK_EQUAL(5, value.get());
 
       value.set(1);
-      CHECK_EQUAL(value.first(), value.get());
+      CHECK_EQUAL(value.min(), value.get());
 
       value.set(8);
-      CHECK_EQUAL(value.last(), value.get());
+      CHECK_EQUAL(value.max(), value.get());
     }
 
     //*************************************************************************
@@ -152,47 +154,47 @@ namespace
     }
 
     //*************************************************************************
-    TEST(test_to_first_compile_time)
+    TEST(test_to_min_compile_time)
     {
       etl::cyclic_value<int, 2, 7> value;
 
       ++value;
-      value.to_first();
+      value.to_min();
 
-      CHECK_EQUAL(value.first(), value);
+      CHECK_EQUAL(value.min(), value);
     }
 
     //*************************************************************************
-    TEST(test_to_first_run_time)
+    TEST(test_to_min_run_time)
     {
       etl::cyclic_value<int> value;
 
       value.set(2, 7);
       ++value;
-      value.to_first();
+      value.to_min();
 
-      CHECK_EQUAL(value.first(), value);
+      CHECK_EQUAL(value.min(), value);
     }
 
     //*************************************************************************
-    TEST(test_to_last_compile_time)
+    TEST(test_to_max_compile_time)
     {
       etl::cyclic_value<int, 2, 7> value;
 
-      value.to_last();
+      value.to_max();
 
-      CHECK_EQUAL(value.last(), value);
+      CHECK_EQUAL(value.max(), value);
     }
 
     //*************************************************************************
-    TEST(test_to_last_run_time)
+    TEST(test_to_max_run_time)
     {
       etl::cyclic_value<int> value;
 
       value.set(2, 7);
-      value.to_last();
+      value.to_max();
 
-      CHECK_EQUAL(value.last(), value);
+      CHECK_EQUAL(value.max(), value);
     }
 
     //*************************************************************************
@@ -200,7 +202,7 @@ namespace
     {
       etl::cyclic_value<int, 2, 7> value;
 
-      for (int i = value.first(); i <= value.last(); ++i)
+      for (int i = value.min(); i <= value.max(); ++i)
       {
         CHECK_EQUAL(i, value);
         ++value;
@@ -214,7 +216,7 @@ namespace
 
       value.set(2, 7);
 
-      for (int i = value.first(); i <= value.last(); ++i)
+      for (int i = value.min(); i <= value.max(); ++i)
       {
         CHECK_EQUAL(i, value);
         ++value;
@@ -226,9 +228,9 @@ namespace
     {
       etl::cyclic_value<int, 2, 7> value;
 
-      value.to_last();
+      value.to_max();
 
-      for (int i = value.last(); i >= value.first(); --i)
+      for (int i = value.max(); i >= value.min(); --i)
       {
         CHECK_EQUAL(i, value);
         --value;
@@ -241,9 +243,9 @@ namespace
       etl::cyclic_value<int> value;
 
       value.set(2, 7);
-      value.to_last();
+      value.to_max();
 
-      for (int i = value.last(); i >= value.first(); --i)
+      for (int i = value.max(); i >= value.min(); --i)
       {
         CHECK_EQUAL(i, value);
         --value;
@@ -357,7 +359,7 @@ namespace
     {
       etl::cyclic_value<int, 2, 7> value;
 
-      value.to_last();
+      value.to_max();
       value.advance(-14);
 
       CHECK_EQUAL(5, value);
@@ -369,7 +371,7 @@ namespace
       etl::cyclic_value<int> value;
 
       value.set(2, 7);
-      value.to_last();
+      value.to_max();
       value.advance(-14);
 
       CHECK_EQUAL(5, value);
@@ -391,7 +393,7 @@ namespace
       etl::cyclic_value<int> value;
 
       value.set(2, 7);
-      value.to_last();
+      value.to_max();
       value.advance(-14);
 
       CHECK_EQUAL(5, value);
@@ -419,6 +421,10 @@ namespace
       value1 = value2;
       CHECK((int)value1 == (int)value2);
 
+      etl::cyclic_value<int, 2, 7>* value1_pointer = &value1;
+      value1                                       = *value1_pointer;
+      CHECK((int)value1 == (int)value2);
+
       value1 = 4;
       CHECK((int)value1 == 4);
     }
@@ -431,11 +437,26 @@ namespace
 
       value1 = value2;
       CHECK(value1.get() == value2.get());
-      CHECK(value1.first() == value2.first());
-      CHECK(value1.last() == value2.last());
+      CHECK(value1.min() == value2.min());
+      CHECK(value1.max() == value2.max());
+
+      etl::cyclic_value<int>* value1_pointer = &value1;
+      value1                                 = *value1_pointer;
+      CHECK(value1.get() == value2.get());
 
       value1 = 4;
       CHECK((int)value1 == 4);
+    }
+
+    //*************************************************************************
+    TEST(test_advance_extreme_values)
+    {
+      etl::cyclic_value<int, 2, 7> compile_time(4);
+      etl::cyclic_value<int>       run_time(2, 7, 4);
+      compile_time.advance(INT_MAX);
+      run_time.advance(INT_MIN);
+      CHECK_EQUAL(4, compile_time.get());
+      CHECK_EQUAL(4, run_time.get());
     }
 
     //*************************************************************************
@@ -506,8 +527,8 @@ namespace
     TEST(test_cyclic_value_constexpr_ctor_with_range)
     {
       constexpr etl::cyclic_value<int> cv(0, 9);
-      static_assert(cv.first() == 0, "constexpr range ctor first");
-      static_assert(cv.last() == 9, "constexpr range ctor last");
+      static_assert(cv.min() == 0, "constexpr range ctor min");
+      static_assert(cv.max() == 9, "constexpr range ctor max");
       CHECK(true);
     }
 

@@ -42,101 +42,104 @@ cyclic_value<int> value(N, M);
 ```
 Creates a runtime cyclic value of type int with initial defined limits of N and M.
 
+As with `clamped_value`, the template arguments `First = 0` and `Last = 0`
+select the runtime-bound specialization.
+
 ## Modifiers
 ```cpp
-cyclic_value& operator ++();
-cyclic_value& operator ++(int);
+cyclic_value& operator ++() & noexcept;
+cyclic_value operator ++(int) noexcept;
 ```
 Increments the value. If the value is at the last value then is set to the first.
 
 ---
 
 ```cpp
-cyclic_value& operator --();
-cyclic_value& operator --(int);
+cyclic_value& operator --() & noexcept;
+cyclic_value operator --(int) noexcept;
 ```
 Decrements the value. If the value is at the first value then is set to the last.
 
 ---
 
 ```cpp
-void advance(int n);
+void advance(int n) noexcept;
 ```
 Advances the value by the specified amount, wrapping if necessary.
 
 ## Access
 ```cpp
-T get() const;
+T get() const noexcept;
 ```
 Gets the current value
 
 ---
 
 ```cpp
-T first() const;
+static T min() noexcept;
 ```
-Sets the current value to the first value
+Gets the minimum value.
 
 ---
 
 ```cpp
-T last() const;
+T max() const noexcept;
 ```
-Sets the current value to the last value
+Gets the maximum value.
 
 ---
 
 ```cpp
-void set(T first, T last);
+void set(T min, T max) noexcept;
 ```
-Sets the new first and last values. Sets the current value to first.
+Sets the new minimum and maximum values. Sets the current value to min.
 
 ---
 
 ```cpp
-void set(T value);
+void set(T value) noexcept;
 ```
 Sets the current value.
 
 ---
 
 ```cpp
-void to_first();
+void to_min() noexcept;
 ```
-Sets the current value to the first value
+Sets the current value to the minimum value.
 
 ---
 
 ```cpp
-void to_last();
+void to_max() noexcept;
 ```
 Sets the current value to the last value
 
 ## Operations
 
 ```cpp
-void swap(cyclic_value<T, FIRST, LAST>& other);
+void swap(cyclic_value<T, FIRST, LAST>& other) noexcept;
 ```
 Swaps with another cyclic value.
 
 ---
 
 ```cpp
-void swap(cyclic_value<T, FIRST, LAST>& lhs, cyclic_value<T, FIRST, LAST>& rhs);
+void swap(cyclic_value<T, FIRST, LAST>& lhs, cyclic_value<T, FIRST, LAST>& rhs) noexcept;
 ```
 Swaps with another cyclic value.
 
 ## Operators
 ```cpp
-operator T();
-operator const T() const;
+operator T() noexcept;
+operator const T() const noexcept;
 ```
 Conversion operators to `T`.
 
 ---
 
 ```cpp
-cyclic_value& operator =(T t);
+cyclic_value& operator =(T t) & noexcept;
 ```
 Sets the current value to `t`.
 
